@@ -26,12 +26,12 @@ export function Receipt({ transaction, receipt, onClose }: ReceiptProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return {
-      date: date.toLocaleDateString('en-IN', {
+      date: date.toLocaleDateString(undefined, {
         day: '2-digit',
         month: 'short',
         year: 'numeric',
       }),
-      time: date.toLocaleTimeString('en-IN', {
+      time: date.toLocaleTimeString(undefined, {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
@@ -53,7 +53,6 @@ export function Receipt({ transaction, receipt, onClose }: ReceiptProps) {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      // fallback to text download
       const content = receiptRef.current?.innerText || '';
       const blob = new Blob([content], { type: 'text/plain' });
       const url = URL.createObjectURL(blob);
@@ -65,26 +64,22 @@ export function Receipt({ transaction, receipt, onClose }: ReceiptProps) {
     }
   };
 
-  const { date, time } = formatDate(transaction.created_at);
+  // USE CURRENT TIME INSTEAD OF transaction.created_at
+  const { date, time } = formatDate(new Date().toISOString());
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
       <div className="w-full max-w-sm bg-card rounded-xl shadow-2xl overflow-hidden">
-        {/* Header */}
         <div className="bg-primary p-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary-foreground">
             <ReceiptIcon className="w-5 h-5" />
             <span className="font-semibold">Transaction Receipt</span>
           </div>
-          <button
-            onClick={onClose}
-            className="text-primary-foreground/80 hover:text-primary-foreground"
-          >
+          <button onClick={onClose} className="text-primary-foreground/80 hover:text-primary-foreground">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Receipt Content */}
         <div ref={receiptRef} className="p-6 font-mono text-sm">
           <div className="text-center mb-6">
             <p className="text-lg font-bold text-foreground">ATM SIMULATOR</p>
@@ -109,9 +104,7 @@ export function Receipt({ transaction, receipt, onClose }: ReceiptProps) {
           <div className="border-t border-dashed border-border py-4 space-y-2">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Account:</span>
-              <span className="text-foreground">
-                ****{account?.account_number.slice(-4)}
-              </span>
+              <span className="text-foreground">****{account?.account_number.slice(-4)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Name:</span>
@@ -145,7 +138,6 @@ export function Receipt({ transaction, receipt, onClose }: ReceiptProps) {
           </div>
         </div>
 
-        {/* Actions */}
         <div className="p-4 bg-secondary/50 flex gap-2">
           <Button variant="outline" className="flex-1" onClick={handlePrint}>
             <Printer className="w-4 h-4 mr-2" />

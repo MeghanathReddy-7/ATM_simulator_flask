@@ -5,6 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 class ApiService {
   private token: string | null = null;
+  private refreshToken: string | null = null;
 
   setToken(token: string | null) {
     this.token = token;
@@ -15,11 +16,27 @@ class ApiService {
     }
   }
 
+  setRefreshToken(token: string | null) {
+    this.refreshToken = token;
+    if (token) {
+      localStorage.setItem('atm_refresh_token', token);
+    } else {
+      localStorage.removeItem('atm_refresh_token');
+    }
+  }
+
   getToken(): string | null {
     if (!this.token) {
       this.token = localStorage.getItem('atm_token');
     }
     return this.token;
+  }
+
+  getRefreshToken(): string | null {
+    if (!this.refreshToken) {
+      this.refreshToken = localStorage.getItem('atm_refresh_token');
+    }
+    return this.refreshToken;
   }
 
   private async request<T>(
@@ -35,10 +52,23 @@ class ApiService {
       ...options.headers,
     };
 
-    const response = await fetch(url, {
+    let response = await fetch(url, {
       ...options,
       headers,
     });
+
+    // If unauthorized, try to refresh token once and retry
+    if (response.status === 401) {
+      const refreshed = await this.tryRefreshAccessToken();
+      if (refreshed) {
+        const retryHeaders: HeadersInit = {
+          'Content-Type': 'application/json',
+          ...(this.token && { Authorization: `Bearer ${this.token}` }),
+          ...options.headers,
+        };
+        response = await fetch(url, { ...options, headers: retryHeaders });
+      }
+    }
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({
@@ -48,6 +78,25 @@ class ApiService {
     }
 
     return response.json();
+  }
+
+  private async tryRefreshAccessToken(): Promise<boolean> {
+    const refresh = this.getRefreshToken();
+    if (!refresh) return false;
+    const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${refresh}` },
+    });
+    if (!res.ok) return false;
+    try {
+      const data = await res.json();
+      if (data?.success && data?.token && data?.refresh_token) {
+        this.setToken(data.token);
+        this.setRefreshToken(data.refresh_token);
+        return true;
+      }
+    } catch {}
+    return false;
   }
 
   // Authentication
@@ -63,6 +112,7 @@ class ApiService {
       await this.request('/auth/logout', { method: 'POST' });
     } finally {
       this.setToken(null);
+      this.setRefreshToken(null);
     }
   }
 
@@ -124,10 +174,15 @@ class ApiService {
   }
 
   async downloadReceiptPdf(receiptId: number): Promise<Blob> {
-    const token = this.token;
+    const token = this.getToken();
     const headers: Record<string, string> = { Accept: 'application/pdf' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await fetch(`${API_BASE_URL}/receipts/${receiptId}/pdf`, { headers }); // <-- Use API_BASE_URL here
+    let res = await fetch(`${API_BASE_URL}/receipts/${receiptId}/pdf`, { headers });
+    if (res.status === 401 && await this.tryRefreshAccessToken()) {
+      const retryHeaders: Record<string, string> = { Accept: 'application/pdf' };
+      if (this.token) retryHeaders['Authorization'] = `Bearer ${this.token}`;
+      res = await fetch(`${API_BASE_URL}/receipts/${receiptId}/pdf`, { headers: retryHeaders });
+    }
     if (!res.ok) {
       throw new Error(`Failed to download receipt PDF (${res.status})`);
     }
@@ -135,10 +190,15 @@ class ApiService {
   }
 
   async downloadLatestReceiptPdf(): Promise<Blob> {
-    const token = this.token;
+    const token = this.getToken();
     const headers: Record<string, string> = { Accept: 'application/pdf' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    const res = await fetch(`${API_BASE_URL}/receipts/latest/pdf`, { headers }); // <-- Use API_BASE_URL here
+    let res = await fetch(`${API_BASE_URL}/receipts/latest/pdf`, { headers });
+    if (res.status === 401 && await this.tryRefreshAccessToken()) {
+      const retryHeaders: Record<string, string> = { Accept: 'application/pdf' };
+      if (this.token) retryHeaders['Authorization'] = `Bearer ${this.token}`;
+      res = await fetch(`${API_BASE_URL}/receipts/latest/pdf`, { headers: retryHeaders });
+    }
     if (!res.ok) {
       throw new Error(`No latest receipt available (${res.status})`);
     }

@@ -96,7 +96,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    // Return a safe fallback to avoid crashing when provider hasn't mounted yet
+    return {
+      user: null,
+      account: null,
+      isAuthenticated: false,
+      isLoading: true,
+      login: async () => ({ success: false, message: 'Auth not initialized' }),
+      logout: async () => {},
+      updateAccount: () => {},
+    };
   }
   return context;
 }

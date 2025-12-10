@@ -18,6 +18,7 @@ import { ChangePinForm } from './ChangePinForm';
 import { cn } from '@/lib/utils';
 import { api } from '@/services/api';
 import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 type View = 'home' | 'withdraw' | 'deposit' | 'history' | 'settings';
 
@@ -31,6 +32,8 @@ interface MenuItem {
 export function Dashboard() {
   const { user, account, logout } = useAuth();
   const [activeView, setActiveView] = useState<View>('home');
+  const navigate = useNavigate();
+  const isAdmin = (user as any)?.role === 'admin';
 
   const menuItems: MenuItem[] = [
     { id: 'withdraw', icon: <Banknote className="w-5 h-5" />, label: 'Withdraw', description: 'Cash withdrawal' },
@@ -75,12 +78,19 @@ export function Dashboard() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={handleLogout}
-              className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <Button variant="outline" onClick={() => navigate('/admin')}>
+                  Admin
+                </Button>
+              )}
+              <button
+                onClick={handleLogout}
+                className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -100,32 +110,6 @@ export function Dashboard() {
 
         {/* Balance Card */}
         <BalanceDisplay showDetails={activeView === 'home'} />
-
-        {/* Quick Receipt Download */}
-        {activeView === 'home' && (
-          <div className="atm-card flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Need a receipt?</p>
-              <p className="text-foreground text-sm">Download the latest transaction receipt</p>
-            </div>
-            <Button
-              variant="outline"
-              onClick={async () => {
-                try {
-                  const blob = await api.downloadLatestReceiptPdf();
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url;
-                  a.download = `latest-receipt.pdf`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                } catch (e) { console.error(e); }
-              }}
-            >
-              Download PDF
-            </Button>
-          </div>
-        )}
 
         {/* Navigation Menu (Home View) */}
         {activeView === 'home' && (

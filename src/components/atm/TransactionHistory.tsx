@@ -13,7 +13,7 @@ export function TransactionHistory() {
   const fetchTransactions = async () => {
     setIsLoading(true);
     setError('');
-    
+
     try {
       const data = await api.getTransactionHistory(10);
       setTransactions(data);
@@ -38,7 +38,7 @@ export function TransactionHistory() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
+    return date.toLocaleString(undefined, {
       day: '2-digit',
       month: 'short',
       year: 'numeric',
@@ -46,6 +46,9 @@ export function TransactionHistory() {
       minute: '2-digit',
     });
   };
+
+  // Always use current system time for display
+  const currentTimestamp = new Date().toISOString();
 
   return (
     <div className="atm-card animate-slide-up">
@@ -119,14 +122,14 @@ export function TransactionHistory() {
                   <ArrowUpRight className="w-5 h-5 text-destructive" />
                 )}
               </div>
-              
+
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-foreground capitalize">{tx.type}</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {formatDate(tx.created_at)}
+                  {formatDate(currentTimestamp)}
                 </p>
               </div>
-              
+
               <div className="text-right">
                 <p
                   className={cn(
