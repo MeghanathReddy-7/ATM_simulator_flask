@@ -1,0 +1,27 @@
+stages:
+  - test
+  - build
+
+variables:
+  PYTHON_VERSION: "3.11"
+
+test-backend:
+  stage: test
+  image: python:${PYTHON_VERSION}
+  script:
+    - pip install -r flask_backend/requirements.txt
+    - pytest -q --maxfail=1 --disable-warnings --cov=flask_backend/app --cov-report=xml
+    - python -m coverage report --fail-under=50
+  artifacts:
+    paths:
+      - coverage.xml
+
+build-backend-docker:
+  stage: build
+  image: docker:latest
+  services:
+    - name: docker:dind
+  variables:
+    DOCKER_DRIVER: overlay2
+  script:
+    - docker build -t atm-backend:latest -f flask_backend/Dockerfile .

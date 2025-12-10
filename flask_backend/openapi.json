@@ -1,0 +1,15 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "ATM Simulator API", "version": "1.0.0"},
+  "paths": {
+    "/api/auth/login": {"post": {"summary": "Login", "responses": {"200": {"description": "OK"}, "401": {"description": "Unauthorized"}}}},
+    "/api/auth/logout": {"post": {"summary": "Logout", "responses": {"200": {"description": "OK"}}}},
+    "/api/auth/validate": {"get": {"summary": "Validate", "responses": {"200": {"description": "OK"}, "401": {"description": "Unauthorized"}}}},
+    "/api/auth/change-pin": {"post": {"summary": "Change PIN", "responses": {"200": {"description": "OK"}, "401": {"description": "Unauthorized"}, "400": {"description": "Bad Request"}}}},
+    "/api/transactions/withdraw": {"post": {"summary": "Withdraw", "responses": {"200": {"description": "OK"}, "400": {"description": "Bad Request"}, "403": {"description": "Forbidden"}, "409": {"description": "Conflict"}, "401": {"description": "Unauthorized"}}}},
+    "/api/transactions/deposit": {"post": {"summary": "Deposit", "responses": {"200": {"description": "OK"}, "400": {"description": "Bad Request"}, "401": {"description": "Unauthorized"}}}},
+    "/api/transactions/history": {"get": {"summary": "History", "responses": {"200": {"description": "OK"}, "401": {"description": "Unauthorized"}}}},
+    "/api/account/balance": {"get": {"summary": "Balance", "responses": {"200": {"description": "OK"}, "401": {"description": "Unauthorized"}}}}
+  }
+}
+
